@@ -197,14 +197,14 @@ def main():
         #### Calculating Population Doubling (PD)
         To calculate the population doubling during a specific passage:
         1. **Formula**:
-        $PD = \frac{\log\left(\frac{\text{Number of cells at harvest}}{\text{Number of cells seeded}}\right)}{\log(2)}$
+        $$PD = \frac{\log\left(\frac{\text{Number of cells at harvest}}{\text{Number of cells seeded}}\right)}{\log(2)}$$
         - Convert the ratio of harvested cells to seeded cells into a logarithmic scale using log base 10, and then divide by log(2) to convert it into base 2.
         - This calculation gives the number of times the cell population has doubled during the passage.
 
         #### Calculating Doubling Time (DT)
         Doubling time reflects how quickly cells double in number during a culture period.
         1. **Formula**:
-        $DT = \frac{\text{Time in culture (e.g., days or hours)}}{PD}$
+        $$DT = \frac{\text{Time in culture (e.g., days or hours)}}{PD}$$
         - Divide the total culture duration by the population doubling to find how often the cells doubled during that time.
 
         #### Tracking Cumulative Population Doubling (cPD)
