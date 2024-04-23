@@ -207,7 +207,7 @@ def main():
         Doubling time reflects how quickly cells double in number during a culture period.
         1. **Formula**:
         $$
-        DT = \frac{\text{Time in culture (e.g., days or hours)}}{PD}$
+        DT = \frac{\text{Time in culture (e.g., days or hours)}}{PD}
         $$
         - Divide the total culture duration by the population doubling to find how often the cells doubled during that time.
 
