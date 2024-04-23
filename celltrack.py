@@ -91,7 +91,7 @@ def add_nodes(parent_node, num_children, creation_datetime, vessel_types, num_ce
 
 def draw_graph():
     pos = nx.multipartite_layout(st.session_state['graph'], subset_key="depth")
-    plt.figure(figsize=(20, 15))
+    plt.figure(figsize=(20, 30))
     colors = {'T75': '#fbb4ae', 'T25': '#b3cde3', 'T125': '#decbe4', '12 well plate': '#ccebc5', '6 well plate': '#fed9a6', 'Cryovial': '#fddaec', 'Unknown': '#cccccc'}
     labels = {node: f"{node}\nDate: {data['date']}\nVessel: {data.get('vessel_type', 'Unknown')}\nCells start: {data.get('num_cells_start', 'N/A')}\nCells end: {data.get('num_cells_end', 'N/A')}\nNotes: {data.get('notes', '')}" for node, data in st.session_state['graph'].nodes(data=True)}
     node_colors = [colors.get(data.get('vessel_type', 'Unknown'), '#cccccc') for _, data in st.session_state['graph'].nodes(data=True)]
