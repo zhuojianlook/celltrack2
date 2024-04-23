@@ -178,43 +178,88 @@ def main():
         default_base_node = st.session_state.get('new_base_node', '')
 
     st.sidebar.title("Instructions")
-    st.sidebar.markdown("""
-        **To setup prerequisites for using this application, follow these steps:**
-        1. Create a google service account JSON Key
-          1. Step 1: Create a [Google Cloud Project](https://console.cloud.google.com/welcome?project=cell-culture-tracking)
-              1. Go to the Google Cloud Console.
-              2. Sign in with your Google account if you haven't already done so.
-              3. Click on the project dropdown at the top of the page and then click on "New Project".
-              4. Enter a project name and select a billing account if necessary.
-              5. Click on "Create".
-          2. Step 2: Enable Google Sheets API
-              1. Make sure the new project is selected.
-              2. Navigate to "APIs & Services > Dashboard".
-              3. Click on "+ ENABLE APIS AND SERVICES".
-              4. Search for "Google Sheets API" and click on it.
-              5. Click on "Enable".
-          3. Step 3: Create a Service Account
-              1. Go to "IAM & Admin > Service accounts".
-              2. Click on "Create Service Account".
-              3. Enter a name and description for the service account.
-              4. Click on "Create and Continue".
-              5. You can skip granting this service account access to the project and click "Continue".
-              6. Click "Done" to finish creating the service account.
-          4. Step 4: Create the JSON Key
-              1. Find the service account you just created in the list and click on it.
-              2. Go to the "Keys" tab.
-              3. Click on "Add Key" and choose "JSON" from the dropdown menu.
-              4. Your browser will download a JSON file containing the private key. This is your service account key, keep it safe
-        2. Create a google sheet with your normal Google account and share the google sheet with the service account email with 'write' privilleges. The service account email can be found in the JSON file and shoud look like 'example@example.iam.gserviceaccount.com'
-        
-        **To use this application, follow these steps**
+    st.sidebar.markdown("""                 
+        ### How to Use This Application
+        To effectively use this application, follow these steps:
         1. Upload your Google service account JSON key.
-        2. Enter the URL of your Google Sheet that contains the graph data. (this is the URL in the address bar)
-        3. Use the controls to add culture steps and define passag parameters
+        2. Enter the URL of your Google Sheet that is shared with the service account.
+        3. Use the controls to add culture steps and define passage parameters.
         4. Click 'Add to Graph' to create and visualize the graph.
         5. Use 'Save Data to Sheet' to save your graph data to Google Sheets.
         6. Use 'Load Data from Sheet' to load and reconstruct the graph from Google Sheets.
-        7. Press 'Refresh' if you need to refresh e.g. after adding a cell line.
+        7. Press 'Refresh' if you need to refresh the session state, e.g., after adding a cell line.
+
+        ### Best Practices for Cell Culture Calculations and Methodologies
+        #### Understanding Population Doubling (PD) and Cumulative Population Doubling (cPD)
+        - **Population Doubling (PD)** is used to measure the growth rate of cells in culture, reflecting the number of times the cell population has doubled during a passage.
+        - **Cumulative Population Doubling (cPD)** represents the total number of times the cell population has doubled since the onset of the culture. It is a useful metric for comparing the biological age of cells from different cell lines.
+
+        #### Calculating Population Doubling (PD)
+        To calculate the population doubling during a specific passage:
+        1. **Formula**:
+        \[
+        PD = \frac{\log\left(\frac{\text{Number of cells at harvest}}{\text{Number of cells seeded}}\right)}{\log(2)}
+        \]
+        - Convert the ratio of harvested cells to seeded cells into a logarithmic scale using log base 10, and then divide by log(2) to convert it into base 2.
+        - This calculation gives the number of times the cell population has doubled during the passage.
+
+        #### Calculating Doubling Time (DT)
+        Doubling time reflects how quickly cells double in number during a culture period.
+        1. **Formula**:
+        \[
+        DT = \frac{\text{Time in culture (e.g., days or hours)}}{PD}
+        \]
+        - Divide the total culture duration by the population doubling to find how often the cells doubled during that time.
+
+        #### Tracking Cumulative Population Doubling (cPD)
+        - To obtain the cumulative population doubling, add the PD of each passage sequentially.
+        - Example progression:
+        - Passage 1 (P1): PD = 3.5
+        - Passage 2 (P2): PD = 3.0 (Cumulative PD = 6.5)
+        - Passage 3 (P3): PD = 2.5 (Cumulative PD = 9.0)
+        - This series provides a running total of cell doublings, useful for assessing cell line vitality and comparability across different lines.
+
+        #### Plotting Growth Curves
+        - Plot cPD against the passage number to visualize the growth or expansion curve of the cell line.
+        - This curve helps compare the growth rates and senescence stages across different cell lines.
+
+        #### Practical Tips for Cell Culture
+        - Always maintain the recommended minimum seeding density specific to each cell line.
+        - While not strictly required for calculations, standardize seeding density for experiments to ensure reproducibility
+        - Harvest cells based on fixed time points or confluence levels (e.g., 80-90% confluence).
+        - Document all relevant parameters:
+        - Days in culture.
+        - Seeding and harvest cell count numbers (for PD and DT calculations).
+        - Maintain a consistent type/number of flasks and media volumes used (important for scaling and reproducibility). e.g. 0.1 ml of media per cm²              
+
+        ### Setting Up Prerequisites
+        To set up prerequisites for using this application, follow these steps:
+        1. **Create a Google service account JSON Key**:
+            - **Step 1**: Create a [Google Cloud Project](https://console.cloud.google.com/welcome?project=cell-culture-tracking).
+            - Go to the Google Cloud Console.
+            - Sign in with your Google account if you haven't already done so.
+            - Click on the project dropdown at the top of the page and then click on "New Project".
+            - Enter a project name and select a billing account if necessary.
+            - Click on "Create".
+            - **Step 2**: Enable Google Sheets API.
+            - Make sure the new project is selected.
+            - Navigate to "APIs & Services > Dashboard".
+            - Click on "+ ENABLE APIS AND SERVICES".
+            - Search for "Google Sheets API" and click on it.
+            - Click on "Enable".
+            - **Step 3**: Create a Service Account.
+            - Go to "IAM & Admin > Service accounts".
+            - Click on "Create Service Account".
+            - Enter a name and description for the service account.
+            - Click on "Create and Continue".
+            - You can skip granting this service account access to the project and click "Continue".
+            - Click "Done" to finish creating the service account.
+            - **Step 4**: Create the JSON Key.
+            - Find the service account you just created in the list and click on it.
+            - Go to the "Keys" tab.
+            - Click on "Add Key" and choose "JSON" from the dropdown menu.
+            - Your browser will download a JSON file containing the private key. Keep it safe.
+        2. Create a Google sheet with your normal Google account and share the Google sheet with the service account email with 'write' privileges. The service account email can be found in the JSON file and should look like 'example@example.iam.gserviceaccount.com'.
         """)
 
     uploaded_file = st.file_uploader("Upload Google service account JSON key", type="json")
