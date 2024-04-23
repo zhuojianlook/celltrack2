@@ -178,7 +178,7 @@ def main():
         default_base_node = st.session_state.get('new_base_node', '')
 
     st.sidebar.title("Instructions")
-    st.sidebar.markdown("""                 
+    st.sidebar.markdown(r"""                 
         ### How to Use This Application
         To effectively use this application, follow these steps:
         1. Upload your Google service account JSON key.
