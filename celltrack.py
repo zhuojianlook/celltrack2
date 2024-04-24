@@ -90,23 +90,12 @@ def add_nodes(parent_node, num_children, creation_datetime, vessel_types, num_ce
         st.session_state['depth_counters'][base_name][next_depth] += 1
 
 def draw_graph():
-    # Use multipartite layout, which organizes nodes into different subsets
-    pos = nx.multipartite_layout(st.session_state['graph'], subset_key="depth")
-    
-    # Attempt to minimize crossings by reordering nodes within each layer
-    layer_sets = defaultdict(list)
-    for node, depth in nx.get_node_attributes(st.session_state['graph'], 'depth').items():
-        layer_sets[depth].append(node)
-
-    # Reorder nodes in each layer by sorting based on the number of edges to previous layer nodes
-    for layer in sorted(layer_sets.keys())[1:]:  # start from second layer as first has no previous connections
-        layer_sets[layer].sort(key=lambda node: sum(1 for pred in st.session_state['graph'].predecessors(node) if pred in layer_sets[layer-1]))
-
-    # Update positions after sorting to maintain the order in the layout
-    new_pos = {}
-    for layer, nodes in layer_sets.items():
-        for i, node in enumerate(nodes):
-            new_pos[node] = (pos[node][0], -layer)  # Using negative to ensure top-down layout
+    # Check if the graph is planar and use a planar layout if possible
+    if nx.check_planarity(st.session_state['graph'])[0]:
+        pos = nx.planar_layout(st.session_state['graph'])
+    else:
+        # Use the spring layout as a fallback
+        pos = nx.spring_layout(st.session_state['graph'], iterations=50)
 
     plt.figure(figsize=(20, 30))
     colors = {
@@ -123,12 +112,13 @@ def draw_graph():
         for _, data in st.session_state['graph'].nodes(data=True)
     ]
     nx.draw(
-        st.session_state['graph'], new_pos, labels=labels, with_labels=True, node_size=7000,
+        st.session_state['graph'], pos, labels=labels, with_labels=True, node_size=7000,
         node_color=node_colors, font_size=9, font_color="black", arrowstyle='-|>', arrowsize=10
     )
     plt.savefig("graph.png")
     plt.close()
     st.image("graph.png", use_column_width=True)
+
 
 
 def reconstruct_graph(df):
