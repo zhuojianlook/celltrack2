@@ -74,33 +74,49 @@ def save_data(df, sheet_url, gc):
         worksheet.append_rows(df.values.tolist(), value_input_option='USER_ENTERED')
 
 def add_nodes(parent_node, num_children, creation_datetime, vessel_types, num_cells_start, num_cells_end_parent, notes):
+    # Convert string representation of datetime to a datetime object
     if isinstance(creation_datetime, str):
         creation_datetime = datetime.strptime(creation_datetime, "%Y-%m-%d %H:%M:%S")
+    
+    # Add parent node if it doesn't exist in the graph
     if parent_node not in st.session_state['graph']:
         st.session_state['graph'].add_node(parent_node, date=creation_datetime, depth=-1)
+    
+    # Set the cell end count for the parent node
     st.session_state['graph'].nodes[parent_node]['num_cells_end'] = num_cells_end_parent
     
+    # Extract base name and current depth from the parent node
     base_name = parent_node.split('P')[0]
     current_depth = st.session_state['graph'].nodes[parent_node]['depth']
     next_depth = current_depth + 1
 
-    # Ensuring unique indexing for children nodes at each depth
+    # Initialize depth counters if not present
     if base_name not in st.session_state['depth_counters']:
         st.session_state['depth_counters'][base_name] = defaultdict(int)
 
-    if next_depth not in st.session_state['depth_counters'][base_name]:
-        st.session_state['depth_counters'][base_name][next_depth] = 0
+    # Find the max index for existing nodes at the next depth to ensure unique naming
+    max_index = max(
+        [int(node.split('.')[1]) for node, data in st.session_state['graph'].nodes(data=True)
+         if data['depth'] == next_depth and node.startswith(base_name)],
+        default=-1
+    ) + 1
 
-    start_index = st.session_state['depth_counters'][base_name][next_depth]
-
+    # Add child nodes
     for i in range(num_children):
-        child_index = start_index + i
+        child_index = max_index + i
         child_node = f"{base_name}P{next_depth}.{child_index}"
-        st.session_state['graph'].add_node(child_node, date=creation_datetime, depth=next_depth, vessel_type=vessel_types[i], num_cells_start=num_cells_start[i], notes=notes[i])
+        st.session_state['graph'].add_node(
+            child_node,
+            date=creation_datetime,
+            depth=next_depth,
+            vessel_type=vessel_types[i],
+            num_cells_start=num_cells_start[i],
+            notes=notes[i]
+        )
         st.session_state['graph'].add_edge(parent_node, child_node)
-    
-    # Update the depth counter after all children are added
-    st.session_state['depth_counters'][base_name][next_depth] += num_children
+
+    # Update the global depth counter with the new index after adding all children
+    st.session_state['depth_counters'][base_name][next_depth] = child_index + 1
 
 
 def draw_graph():
