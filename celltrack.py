@@ -90,14 +90,43 @@ def add_nodes(parent_node, num_children, creation_datetime, vessel_types, num_ce
         st.session_state['depth_counters'][base_name][next_depth] += 1
 
 def draw_graph():
-    # Check if the graph is planar and use a planar layout if possible
-    if nx.check_planarity(st.session_state['graph'])[0]:
-        pos = nx.planar_layout(st.session_state['graph'])
-    else:
-        # Use the spring layout as a fallback
-        pos = nx.spring_layout(st.session_state['graph'], iterations=50)
+    # Use multipartite layout as the base
+    pos = nx.multipartite_layout(st.session_state['graph'], subset_key="depth")
+    
+    # Sort nodes in each subset to minimize edge crossings
+    subsets = {}
+    for node, data in st.session_state['graph'].nodes(data=True):
+        depth = data['depth']
+        if depth not in subsets:
+            subsets[depth] = []
+        subsets[depth].append(node)
 
-    plt.figure(figsize=(20, 30))
+    # Find the maximum number of nodes in any layer
+    max_nodes_in_layer = max(len(layer) for layer in subsets.values())
+    
+    # Calculate new positions by sorting nodes within each depth
+    new_pos = {}
+    num_layers = len(subsets)
+    max_width = max(len(subset) for subset in subsets.values())  # Find the widest layer for consistent positioning
+
+    for depth, nodes in subsets.items():
+        sorted_nodes = sorted(nodes)  # Initial sort to maintain consistent order before considering predecessors
+        if depth > min(subsets.keys()):  # Ensure there is a previous depth
+            # Sort based on the sum of edges to nodes in the previous layer
+            prev_layer = subsets[depth - 1]
+            sorted_nodes = sorted(sorted_nodes, key=lambda x: -sum(1 for pred in st.session_state['graph'].predecessors(x) if pred in prev_layer))
+
+        # Distribute nodes evenly across the available space, updating coordinates to make it horizontal
+        for index, node in enumerate(sorted_nodes):
+            # Swap x and y to make it horizontal and adjust spacing
+            new_pos[node] = (depth, -index * max_width / len(sorted_nodes))  # New x is depth, new y is index
+
+    # Determine the figure size dynamically based on the graph dimensions
+    fig_width = max(20, num_layers * 3)  # Ensure a minimum width and scale by layer count
+    fig_height = max(10, max_nodes_in_layer * 1.5)  # Scale height by the number of nodes in the largest layer
+    
+    # Drawing the graph with the adjusted positions
+    plt.figure(figsize=(fig_width, fig_height), dpi=300)  # Set DPI here
     colors = {
         'T75': '#fbb4ae', 'T25': '#b3cde3', 'T125': '#decbe4',
         '12 well plate': '#ccebc5', '6 well plate': '#fed9a6',
@@ -107,17 +136,12 @@ def draw_graph():
         node: f"{node}\nDate: {data['date']}\nVessel: {data.get('vessel_type', 'Unknown')}\nCells start: {data.get('num_cells_start', 'N/A')}\nCells end: {data.get('num_cells_end', 'N/A')}\nNotes: {data.get('notes', '')}"
         for node, data in st.session_state['graph'].nodes(data=True)
     }
-    node_colors = [
-        colors.get(data.get('vessel_type', 'Unknown'), '#cccccc')
-        for _, data in st.session_state['graph'].nodes(data=True)
-    ]
-    nx.draw(
-        st.session_state['graph'], pos, labels=labels, with_labels=True, node_size=7000,
-        node_color=node_colors, font_size=9, font_color="black", arrowstyle='-|>', arrowsize=10
-    )
-    plt.savefig("graph.png")
+    node_colors = [colors.get(data.get('vessel_type', 'Unknown'), '#cccccc') for _, data in st.session_state['graph'].nodes(data=True)]
+    nx.draw(st.session_state['graph'], new_pos, labels=labels, with_labels=True, node_size=7000, node_color=node_colors, font_size=9, font_color="black", arrowstyle='-|>', arrowsize=10)
+    plt.savefig("graph.png", dpi=300)  # Also specify DPI when saving the file
     plt.close()
     st.image("graph.png", use_column_width=True)
+
 
 
 
