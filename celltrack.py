@@ -79,15 +79,29 @@ def add_nodes(parent_node, num_children, creation_datetime, vessel_types, num_ce
     if parent_node not in st.session_state['graph']:
         st.session_state['graph'].add_node(parent_node, date=creation_datetime, depth=-1)
     st.session_state['graph'].nodes[parent_node]['num_cells_end'] = num_cells_end_parent
+    
     base_name = parent_node.split('P')[0]
     current_depth = st.session_state['graph'].nodes[parent_node]['depth']
     next_depth = current_depth + 1
+
+    # Ensuring unique indexing for children nodes at each depth
+    if base_name not in st.session_state['depth_counters']:
+        st.session_state['depth_counters'][base_name] = defaultdict(int)
+
+    if next_depth not in st.session_state['depth_counters'][base_name]:
+        st.session_state['depth_counters'][base_name][next_depth] = 0
+
+    start_index = st.session_state['depth_counters'][base_name][next_depth]
+
     for i in range(num_children):
-        child_index = st.session_state['depth_counters'][base_name][next_depth]
+        child_index = start_index + i
         child_node = f"{base_name}P{next_depth}.{child_index}"
         st.session_state['graph'].add_node(child_node, date=creation_datetime, depth=next_depth, vessel_type=vessel_types[i], num_cells_start=num_cells_start[i], notes=notes[i])
         st.session_state['graph'].add_edge(parent_node, child_node)
-        st.session_state['depth_counters'][base_name][next_depth] += 1
+    
+    # Update the depth counter after all children are added
+    st.session_state['depth_counters'][base_name][next_depth] += num_children
+
 
 def draw_graph():
     # Use multipartite layout as the base
@@ -307,6 +321,7 @@ def main():
             - Click on "Add Key" and choose "JSON" from the dropdown menu.
             - Your browser will download a JSON file containing the private key. Keep it safe.
         2. Create a Google sheet with your normal Google account and share the Google sheet with the service account email with 'write' privileges. The service account email can be found in the JSON file and should look like 'example@example.iam.gserviceaccount.com'.
+        3. Note that if you want to retroactively modify the date in google sheets, you have to follow the same format, otherwise saving to sheet will overwrite a blank value. For ease of use you should format the entire date column with the YYYY-MM-DD format (Format -> Numbers -> Custom Date and Time)
         """)
 
     uploaded_file = st.file_uploader("Upload Google service account JSON key", type="json")
