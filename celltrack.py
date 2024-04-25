@@ -365,7 +365,11 @@ def main():
     notes = [st.text_input(f'Notes for child {i+1}:', key=f'notes_{i}') for i in range(num_children)]
     num_cells_end_parent = st.number_input('Total end cell number for Parent vessel', min_value=0, format="%d", key='cells_end_parent')
     creation_date = st.date_input('Select Date of Passage', value=datetime.today())
-    creation_time = st.time_input('Select Time of Passage', value=datetime.now().time())
+    # Time selection with session state management
+    if 'time_of_passage' not in st.session_state:
+        st.session_state['time_of_passage'] = datetime.now().time()
+    creation_time = st.time_input('Select Time of Passage', value=st.session_state['time_of_passage'])
+    st.session_state['time_of_passage'] = creation_time
     full_creation_datetime = datetime.combine(creation_date, creation_time)
 
     existing_nodes = [node for node in st.session_state['graph']]
