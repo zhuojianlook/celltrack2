@@ -77,25 +77,24 @@ def add_nodes(parent_node, num_children, creation_datetime, vessel_types, num_ce
     # Convert string representation of datetime to a datetime object if it's a string
     if isinstance(creation_datetime, str):
         creation_datetime = datetime.strptime(creation_datetime, "%Y-%m-%d %H:%M:%S")
-    
+
     # Check if the parent node already exists in the graph
     if parent_node not in st.session_state['graph']:
-        # If the parent node is entirely new, initialize it with a default depth of 0
-        st.session_state['graph'].add_node(parent_node, date=creation_datetime, depth=0, num_cells_end=num_cells_end_parent)
+        # Initialize new parent node with a depth of -1 if it does not exist
+        st.session_state['graph'].add_node(parent_node, date=creation_datetime, depth=-1, num_cells_end=num_cells_end_parent)
     else:
         # Update the cell end count for the existing parent node
         st.session_state['graph'].nodes[parent_node]['num_cells_end'] = num_cells_end_parent
 
-    # Extract the base name and current depth from the parent node
-    # Adjust handling here to accommodate new base names that may not include 'P'
+    # Extract the base name and check if depth is initialized from the parent node
     if 'P' in parent_node:
         base_name, depth_part = parent_node.split('P', 1)
         current_depth = int(depth_part.split('.')[0])
     else:
         base_name = parent_node
         current_depth = st.session_state['graph'].nodes[parent_node]['depth']
-    
-    # Prepare the next depth level
+
+    # The next depth should be the current depth + 1, which properly initializes child nodes at P0 if parent is P-1
     next_depth = current_depth + 1
 
     # Initialize or fetch depth counters for the base name
@@ -128,6 +127,7 @@ def add_nodes(parent_node, num_children, creation_datetime, vessel_types, num_ce
 
     # Update the depth counter for the base name at the next depth level
     st.session_state['depth_counters'][base_name][next_depth] = child_index + 1
+
 
 
 def draw_graph():
