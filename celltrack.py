@@ -74,34 +74,45 @@ def save_data(df, sheet_url, gc):
         worksheet.append_rows(df.values.tolist(), value_input_option='USER_ENTERED')
 
 def add_nodes(parent_node, num_children, creation_datetime, vessel_types, num_cells_start, num_cells_end_parent, notes):
-    # Convert string representation of datetime to a datetime object
+    # Convert string representation of datetime to a datetime object if it's a string
     if isinstance(creation_datetime, str):
         creation_datetime = datetime.strptime(creation_datetime, "%Y-%m-%d %H:%M:%S")
     
-    # Add parent node if it doesn't exist in the graph
+    # Check if the parent node already exists in the graph
     if parent_node not in st.session_state['graph']:
-        st.session_state['graph'].add_node(parent_node, date=creation_datetime, depth=-1)
+        # If the parent node is entirely new, initialize it with a default depth of 0
+        st.session_state['graph'].add_node(parent_node, date=creation_datetime, depth=0, num_cells_end=num_cells_end_parent)
+    else:
+        # Update the cell end count for the existing parent node
+        st.session_state['graph'].nodes[parent_node]['num_cells_end'] = num_cells_end_parent
+
+    # Extract the base name and current depth from the parent node
+    # Adjust handling here to accommodate new base names that may not include 'P'
+    if 'P' in parent_node:
+        base_name, depth_part = parent_node.split('P', 1)
+        current_depth = int(depth_part.split('.')[0])
+    else:
+        base_name = parent_node
+        current_depth = st.session_state['graph'].nodes[parent_node]['depth']
     
-    # Set the cell end count for the parent node
-    st.session_state['graph'].nodes[parent_node]['num_cells_end'] = num_cells_end_parent
-    
-    # Extract base name and current depth from the parent node
-    base_name = parent_node.split('P')[0]
-    current_depth = st.session_state['graph'].nodes[parent_node]['depth']
+    # Prepare the next depth level
     next_depth = current_depth + 1
 
-    # Initialize depth counters if not present
+    # Initialize or fetch depth counters for the base name
     if base_name not in st.session_state['depth_counters']:
         st.session_state['depth_counters'][base_name] = defaultdict(int)
 
-    # Find the max index for existing nodes at the next depth to ensure unique naming
+    # Determine the starting index for new child nodes at the next depth level
     max_index = max(
         [int(node.split('.')[1]) for node, data in st.session_state['graph'].nodes(data=True)
          if data['depth'] == next_depth and node.startswith(base_name)],
         default=-1
     ) + 1
 
-    # Add child nodes
+    # Initialize child_index before the loop to handle cases with no children
+    child_index = max_index - 1
+
+    # Create and add child nodes
     for i in range(num_children):
         child_index = max_index + i
         child_node = f"{base_name}P{next_depth}.{child_index}"
@@ -115,7 +126,7 @@ def add_nodes(parent_node, num_children, creation_datetime, vessel_types, num_ce
         )
         st.session_state['graph'].add_edge(parent_node, child_node)
 
-    # Update the global depth counter with the new index after adding all children
+    # Update the depth counter for the base name at the next depth level
     st.session_state['depth_counters'][base_name][next_depth] = child_index + 1
 
 
